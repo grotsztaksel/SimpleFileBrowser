@@ -25,12 +25,15 @@ Ui_MainWindow, QMainWindow = uic.loadUiType(os.path.join(os.path.dirname(__file_
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowFlags(), dir=None):
         super().__init__(parent, flags)
         self.setupUi(self)
         self.model = Model(self)
 
         self.treeView.setItemDelegate(PercentBarDelegate(self.treeView))
+        if dir is not None:
+            self.lineEdit.setText(dir)
+            self.onTextAccepted()
 
     @pyqtSlot()
     def onDirButtonClicked(self):
@@ -52,6 +55,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         brush = pal.text()
         if os.path.isdir(text):
             self.setRootDir(text)
+        elif not text:
+            pass
         else:
             brush.setColor(QColor(Qt.red))
         pal.setColor(QPalette.Text, brush.color())
