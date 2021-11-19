@@ -78,6 +78,10 @@ class Model(QFileSystemModel):
     PercentageAssessedRole = Qt.UserRole + 1
     PercentageBinaryRole = Qt.UserRole + 2
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.cache = {}
+
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
         Add one data column
@@ -99,7 +103,7 @@ class Model(QFileSystemModel):
         col = index.column()
         if col == 0 and role == Qt.ForegroundRole:
             fp = self.filePath(index)
-            if os.path.isfile(fp) and not isText(fp):
+            if os.path.isfile(fp) and not self.isText(fp):
                 # Make only non-text files (do not mark directories
                 return QColor(Qt.blue).lighter()
             else:
@@ -112,6 +116,15 @@ class Model(QFileSystemModel):
             return 0.6
         elif col > Model.DATACOL:
             return super().data(index.siblingAtColumn(col - 1), role)
+
+    def isText(self, file):
+        """
+        Instead of interrogating the file every time on data() call, keep the information whether it is a text
+        file in the cache once it has been checked
+        """
+        if file not in self.cache:
+            self.cache[file] = isText(file)
+        return self.cache[file]
 
 
 class PercentBarDelegate(QStyledItemDelegate):
