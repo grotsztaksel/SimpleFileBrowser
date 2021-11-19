@@ -14,9 +14,9 @@ import typing
 from random import random
 
 from PyQt5 import uic
-from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtGui import QColor, QPainter
-from PyQt5.QtWidgets import QFileSystemModel, QStyledItemDelegate, QStyleOptionViewItem
+from PyQt5.QtCore import Qt, QModelIndex, pyqtSlot
+from PyQt5.QtGui import QColor, QPainter, QPalette
+from PyQt5.QtWidgets import QFileSystemModel, QStyledItemDelegate, QStyleOptionViewItem, QFileDialog
 
 from .percent_bar import PercentBar
 from .utils import isText
@@ -31,7 +31,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.model = Model(self)
 
         self.treeView.setItemDelegate(PercentBarDelegate(self.treeView))
+
+    @pyqtSlot()
+    def onDirButtonClicked(self):
+        """Open a directory selection dialog"""
+        if isinstance(self.treeView.model(), Model):
+            root = self.treeView.model().rootPath()
+        else:
+            root = os.getcwd()
+        dir = QFileDialog.getExistingDirectory(self, "Select root directory", root)
+        if dir:
+            self.setRootDir(dir)
+
+    @pyqtSlot()
+    def onTextAccepted(self):
+        """Adjust path separators"""
+        text = self.lineEdit.text().replace("\/", os.sep).replace("/", os.sep)
+        self.lineEdit.setText(text)
+        pal = self.palette()
+        brush = pal.text()
+        if os.path.isdir(text):
+            self.setRootDir(text)
+        else:
+            brush.setColor(QColor(Qt.red))
+        pal.setColor(QPalette.Text, brush.color())
+        self.lineEdit.setPalette(pal)
+
+    def setRootDir(self, dir):
+        """Helper function to set the root path on all widgets and the model"""
+        self.lineEdit.setText(dir)
         self.treeView.setModel(self.model)
+        self.treeView.setRootIndex(self.model.setRootPath(dir))
 
 
 class Model(QFileSystemModel):
