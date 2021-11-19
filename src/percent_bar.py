@@ -11,14 +11,14 @@ __all__ = ['PercentBar']
 __date__ = '2021-11-19'
 __authors__ = ["Piotr Gradkowski <grotsztaksel@o2.pl>"]
 
-from PyQt5.QtCore import Qt, QRect, pyqtSlot, QSize
+from PyQt5.QtCore import Qt, QRect, pyqtSlot, QSize, QMargins
 
 from PyQt5.QtGui import QPaintEvent, QColor, QPen, QPainter
 from PyQt5.QtWidgets import QWidget
 
 
 class PercentBar(QWidget):
-    def __init__(self, parent, tooltipFormat=None):
+    def __init__(self, parent=None, tooltipFormat=None):
         super(PercentBar, self).__init__(parent)
         self.setMinimumSize(QSize(32, 16))
         self.assessed = 0.0
@@ -73,6 +73,8 @@ class PercentBar(QWidget):
         b.setColor(self.unassessedColor)
         b.setStyle(Qt.SolidPattern)
         painter.setBrush(b)
+
+        rec = rec.marginsRemoved(QMargins(2, 2, 2, 2))
         painter.drawRect(rec)
         b.setColor(self.assessedColor)
         painter.setBrush(b)
@@ -88,4 +90,3 @@ class PercentBar(QWidget):
         w = rec.width() * self.true
         rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
         painter.drawRect(rec)
-        print(14)
