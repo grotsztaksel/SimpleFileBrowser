@@ -14,9 +14,10 @@ import typing
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QModelIndex
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QFileSystemModel
+from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtWidgets import QFileSystemModel, QStyledItemDelegate, QStyleOptionViewItem
 
+from .percent_bar import PercentBar
 from .utils import isText
 
 Ui_MainWindow, QMainWindow = uic.loadUiType(os.path.join(os.path.dirname(__file__), "mainwindow.ui"))
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.model = Model(self)
 
+        self.treeView.setItemDelegate(PercentBarDelegate(self.treeView))
         self.treeView.setModel(self.model)
 
 
@@ -65,8 +67,26 @@ class Model(QFileSystemModel):
                 return super().data(index, role)
         elif col < Model.DATACOL:
             return super().data(index, role)
-        elif col == Model.DATACOL:
-            if role == Qt.DisplayRole:
-                return "blala"
         elif col > Model.DATACOL:
             return super().data(index.siblingAtColumn(col - 1), role)
+
+
+class PercentBarDelegate(QStyledItemDelegate):
+    """
+    Delegate class that shows percentage of assessed files and how many of them are binary
+    """
+
+    def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
+        if self.percentBarRequired(index):
+            bar = PercentBar()
+            bar.assessed = 0.8
+            bar.true = 0.6
+            bar.paint(painter, option.rect)
+        else:
+            super().paint(painter, option, index)
+
+    def percentBarRequired(self, index):
+        """Helper function deciding whether the percent bar is required for given index"""
+        return isinstance(index.model(), Model) and \
+               os.path.isdir(index.model().filePath(index.siblingAtColumn(0))) and \
+               index.column() == Model.DATACOL
