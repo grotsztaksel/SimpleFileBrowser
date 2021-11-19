@@ -11,6 +11,7 @@ __authors__ = ["Piotr Gradkowski <grotsztaksel@o2.pl>"]
 
 import os
 import typing
+from random import random
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QModelIndex
@@ -39,6 +40,9 @@ class Model(QFileSystemModel):
     """
     DATACOL = 2  # Column at which the custom data shall be presented
 
+    PercentageAssessedRole = Qt.UserRole + 1
+    PercentageBinaryRole = Qt.UserRole + 2
+
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
         Add one data column
@@ -52,7 +56,7 @@ class Model(QFileSystemModel):
             return super(Model, self).headerData(section, orientation, role)
         elif section == Model.DATACOL:
             if role == Qt.DisplayRole:
-                return "My custom data"
+                return "% of binary files"
         else:
             return super(Model, self).headerData(section - 1, orientation, role)
 
@@ -67,6 +71,10 @@ class Model(QFileSystemModel):
                 return super().data(index, role)
         elif col < Model.DATACOL:
             return super().data(index, role)
+        elif role == Model.PercentageBinaryRole and col == Model.DATACOL:
+            return 0.9
+        elif role == Model.PercentageAssessedRole and col == Model.DATACOL:
+            return 0.6
         elif col > Model.DATACOL:
             return super().data(index.siblingAtColumn(col - 1), role)
 
@@ -79,8 +87,8 @@ class PercentBarDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
         if self.percentBarRequired(index):
             bar = PercentBar()
-            bar.assessed = 0.8
-            bar.true = 0.6
+            bar.assessed = index.data(role=Model.PercentageAssessedRole)
+            bar.true = index.data(role=Model.PercentageBinaryRole)
             bar.paint(painter, option.rect)
         else:
             super().paint(painter, option, index)
