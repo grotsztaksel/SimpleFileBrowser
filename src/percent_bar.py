@@ -27,7 +27,7 @@ class PercentBar(QWidget):
 
         self.unassessedColor = QColor(Qt.gray)
         self.assessedColor = QColor(Qt.white)
-        self.trueColor = QColor(Qt.darkBlue)
+        self.trueColor = QColor(Qt.darkBlue).lighter(250)
 
         if tooltipFormat is not None:
             self.setTooltipFormat(tooltipFormat)
