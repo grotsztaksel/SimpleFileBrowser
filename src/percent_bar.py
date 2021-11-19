@@ -63,27 +63,29 @@ class PercentBar(QWidget):
             self.repaint()
 
     def paintEvent(self, e: QPaintEvent) -> None:
-        rec = self.geometry()
-        print(rec.size())
-        p = QPainter(self)
-        p.setPen(Qt.NoPen)
-        b = p.brush()
+        rec = e.rect()
+        painter = QPainter(self)
+        self.paint(painter, rec)
+
+    def paint(self, painter, rec) -> None:
+        painter.setPen(Qt.NoPen)
+        b = painter.brush()
         b.setColor(self.unassessedColor)
         b.setStyle(Qt.SolidPattern)
-        p.setBrush(b)
-        p.drawRect(rec)
+        painter.setBrush(b)
+        painter.drawRect(rec)
         b.setColor(self.assessedColor)
-        p.setBrush(b)
+        painter.setBrush(b)
         if self.assessed == 0:
             return
         w = rec.width() * self.assessed
-        rec = QRect(rec.topLeft(),  QSize(int(w), rec.height()))
-        p.drawRect(rec)
+        rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
+        painter.drawRect(rec)
         b.setColor(self.trueColor)
-        p.setBrush(b)
+        painter.setBrush(b)
         if self.true == 0.0:
             return
         w = rec.width() * self.true
-        rec = QRect(rec.topLeft(),  QSize(int(w), rec.height()))
-        p.drawRect(rec)
+        rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
+        painter.drawRect(rec)
         print(14)
