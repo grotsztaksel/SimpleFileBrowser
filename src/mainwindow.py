@@ -35,11 +35,38 @@ class Model(QFileSystemModel):
     """
     File system model that shows whether the file is binary or not
     """
+    DATACOL = 2  # Column at which the custom data shall be presented
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        """
+        Add one data column
+        :param parent: parent index
+        :return:
+        """
+        return super(Model, self).columnCount() + 1
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Any:
+        if section < Model.DATACOL:
+            return super(Model, self).headerData(section, orientation, role)
+        elif section == Model.DATACOL:
+            if role == Qt.DisplayRole:
+                return "My custom data"
+        else:
+            return super(Model, self).headerData(section - 1, orientation, role)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
-        if role == Qt.ForegroundRole and index.column() == 0:
+        col = index.column()
+        if col == 0 and role == Qt.ForegroundRole:
             fp = self.filePath(index)
             if os.path.isfile(fp) and not isText(fp):
                 # Make only non-text files (do not mark directories
                 return QColor(Qt.blue).lighter()
-        return super().data(index, role)
+            else:
+                return super().data(index, role)
+        elif col < Model.DATACOL:
+            return super().data(index, role)
+        elif col == Model.DATACOL:
+            if role == Qt.DisplayRole:
+                return "blala"
+        elif col > Model.DATACOL:
+            return super().data(index.siblingAtColumn(col - 1), role)
