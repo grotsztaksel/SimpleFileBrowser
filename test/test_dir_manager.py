@@ -12,7 +12,20 @@ import shutil
 import unittest
 import os
 
+from test.app import app
+from PyQt5.QtWidgets import QFileSystemModel
+
 from src.dir_manager import DirManager, DirTreeItem, Dir, File
+
+FILES = [
+    "d1/d1/d1/file1.txt",
+    "d1/d1/d1/file2.txt",
+    "d1/d1/d1/file3.dat",
+    "d1/d2/file1.txt",
+    "d1/d2/file2.dat",
+    "d1/d2/d1/file1.dat",
+    "d2/d1/d1/file1.txt"
+]
 
 
 class TestDirManager(unittest.TestCase):
@@ -25,6 +38,45 @@ class TestDirManager(unittest.TestCase):
     def test_getDir(self):
         mgr = DirManager(dir=self.dir)
         self.assertEqual(self.dir, mgr.getDir())
+
+    def test_setModel(self):
+        model = QFileSystemModel()
+        app.processEvents()
+        self.assertTrue(os.path.isdir(self.dir))
+        rootIndex = model.setRootPath(self.dir)
+        self.assertEqual(os.path.basename(self.dir), model.data(rootIndex))
+
+        mgr = DirManager(dir=self.dir)
+        mgr.setModel(model)
+
+        for path, item in mgr.items.items():
+            index = model.index(path)
+            self.assertEqual(item, mgr.map[index])
+
+        # Store the indexes to easily access them
+        indexes = {}
+        indexes["d1"] = model.index(0, 0, rootIndex)
+        indexes["d1/d1"] = model.index(0, 0, indexes["d1"])
+        indexes["d1/d1/d1"] = model.index(0, 0, indexes["d1/d1"])
+        indexes["d1/d1/d1/file1.txt"] = model.index(0, 0, indexes["d1/d1/d1"])
+        indexes["d1/d1/d1/file2.txt"] = model.index(1, 0, indexes["d1/d1/d1"])
+        indexes["d1/d1/d1/file3.dat"] = model.index(2, 0, indexes["d1/d1/d1"])
+        indexes["d1/d2"] = model.index(1, 0, indexes["d1"])
+        indexes["d1/d2/d1"] = model.index(0, 0, indexes["d1/d2"])
+        indexes["d1/d2/d1/file1.dat"] = model.index(0, 0, indexes["d1/d2/d1"])
+        indexes["d1/d2/file1.txt"] = model.index(1, 0, indexes["d1/d2"])
+        indexes["d1/d2/file2.dat"] = model.index(2, 0, indexes["d1/d2"])
+        indexes["d2"] = model.index(1, 0, rootIndex)
+        indexes["d2/d1"] = model.index(0, 0, indexes["d2"])
+        indexes["d2/d1/d1"] = model.index(0, 0, indexes["d2/d1"])
+        indexes["d2/d1/d1/file1.txt"] = model.index(0, 0, indexes["d2/d1/d1"])
+
+        for path, index in indexes.items():
+            fullpath = os.path.normpath(os.path.join(self.dir, os.sep.join(path.split("/"))))
+            self.assertEqual(fullpath,
+                             os.path.normpath(model.filePath(index)), path)
+
+            self.assertEqual(mgr.map[index], mgr.items[fullpath])
 
 
 class TestDirTreeItem(unittest.TestCase):
@@ -79,16 +131,8 @@ class TestFile(unittest.TestCase):
 
 def prepareDirs():
     dir = os.path.join(os.path.dirname(__file__), "testdir")
-    files = [
-        "d1/d1/d1/file1.txt",
-        "d1/d1/d1/file2.txt",
-        "d1/d1/d1/file3.dat",
-        "d1/d2/file1.txt",
-        "d1/d2/file2.dat",
-        "d1/d2/d1/file1.dat",
-        "d2/d1/d1/file1.txt"
-    ]
-    for file in files:
+
+    for file in FILES:
         subpath = os.sep.join(file.split("/"))
         path = os.path.join(dir, subpath)
         os.makedirs(os.path.dirname(path), exist_ok=True)

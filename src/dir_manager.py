@@ -15,6 +15,7 @@ __authors__ = ["Piotr Gradkowski <grotsztaksel@o2.pl>"]
 import os
 
 from PyQt5.QtCore import QObject
+from PyQt5.QtWidgets import QFileSystemModel
 
 from src import isText
 
@@ -27,10 +28,19 @@ class DirManager(QObject):
         super().__init__(parent)
         self.items = {}
         self.dir = Dir(dir, self)
+        self.model = None
+        self.map = {}
 
     def getDir(self):
         """Return the own path"""
         return self.dir.path
+
+    def setModel(self, model):
+        assert isinstance(model, QFileSystemModel)
+        self.model = model
+        for path, item in self.items.items():
+            index = self.model.index(path)
+            self.map[index] = item
 
 
 class DirTreeItem:
