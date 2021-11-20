@@ -31,7 +31,11 @@ if __name__ == '__main__':
                         ]
                         )
     app = QApplication(sys.argv)
-    gui = MainWindow(dir=sys.argv[1])
+    if len(sys.argv)>1:
+        dir = sys.argv[1]
+    else:
+        dir = None
+    gui = MainWindow(dir=dir)
     gui.model.setRootPath(os.getcwd())
     gui.show()
 
