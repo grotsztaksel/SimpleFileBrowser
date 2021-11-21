@@ -170,6 +170,8 @@ class PercentBarDelegate(QStyledItemDelegate):
             if numbers:
                 bar.numbers = numbers
             bar.paint(painter, option.rect)
+        elif self.fileLabelRequired(index):
+            self.paintFileLabel(painter, option, index)
         else:
             super().paint(painter, option, index)
 
@@ -178,3 +180,47 @@ class PercentBarDelegate(QStyledItemDelegate):
         return isinstance(index.model(), Model) and \
                os.path.isdir(index.model().filePath(index.siblingAtColumn(0))) and \
                index.column() == Model.DATACOL
+
+    def fileLabelRequired(self, index):
+        """
+        Return true if index has a file what is binary
+        :param index:
+        :return:
+        """
+        model = index.model()
+        if not isinstance(model, Model):
+            return False
+
+        return index.column() == Model.DATACOL and os.path.isfile(model.filePath(index))
+
+    def paintFileLabel(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
+        model = index.model()
+        if not isinstance(model, Model):
+            return super().paint(painter, option, index)
+
+        fp = os.path.normpath(model.filePath(index))
+        if model.mgr is None:
+            return super().paint(painter, option, index)
+        if fp not in model.mgr.items or not os.path.isfile(fp):
+            return super().paint(painter, option, index)
+
+        rec = option.rect
+        font = painter.font()
+        font.setPixelSize(rec.height() * 0.5)
+
+        if model.mgr.items[fp].isBinary():
+            txt = "b"
+            font.setFamily("Tahoma")
+            color = QColor(Qt.blue).lighter()
+        else:
+            txt = ""
+            font.setFamily("Courier")
+            color = QColor(Qt.gray)
+
+        pen = painter.pen()
+        pen.setColor(color)
+        pen.setStyle(Qt.SolidLine)
+        painter.setFont(font)
+        painter.setPen(pen)
+
+        painter.drawText(rec, Qt.AlignCenter, txt)
