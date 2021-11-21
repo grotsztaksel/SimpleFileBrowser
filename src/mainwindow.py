@@ -75,12 +75,12 @@ class Model(QFileSystemModel):
     """
     DATACOL = 2  # Column at which the custom data shall be presented
 
-    PercentageAssessedRole = Qt.UserRole + 1
-    PercentageBinaryRole = Qt.UserRole + 2
+    TotalBinaryRole = Qt.UserRole + 1
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.cache = {}
+        self.mgr = 12
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
@@ -110,12 +110,15 @@ class Model(QFileSystemModel):
                 return super().data(index, role)
         elif col < Model.DATACOL:
             return super().data(index, role)
-        elif role == Model.PercentageBinaryRole and col == Model.DATACOL:
-            return 0.9
-        elif role == Model.PercentageAssessedRole and col == Model.DATACOL:
-            return 0.6
+        elif role == Model.TotalBinaryRole and col == Model.DATACOL and self.mgr is not None:
+            return [2, 4, 7]
+            fp = self.filePath(index)
+            return [self.mgr.items[fp].binCount(), self.mgr.items[fp].txtCount(), self.mgr.items[fp].totalFiles()]
         elif col > Model.DATACOL:
             return super().data(index.siblingAtColumn(col - 1), role)
+
+    def setDirManager(self, manager):
+        self.mgr = manager
 
     def isText(self, file):
         """
@@ -135,8 +138,7 @@ class PercentBarDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
         if self.percentBarRequired(index):
             bar = PercentBar()
-            bar.assessed = index.data(role=Model.PercentageAssessedRole)
-            bar.true = index.data(role=Model.PercentageBinaryRole)
+            bar.numbers = index.data(role=Model.TotalBinaryRole)
             bar.paint(painter, option.rect)
         else:
             super().paint(painter, option, index)
