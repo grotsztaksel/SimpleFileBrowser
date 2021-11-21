@@ -21,7 +21,7 @@ class PercentBar(QWidget):
     def __init__(self, parent=None, tooltipFormat=None):
         super(PercentBar, self).__init__(parent)
         self.setMinimumSize(QSize(32, 16))
-        self.numbers = [2, 4, 7]
+        self.numbers = [None, None, None]
         self.tf = "Analyzed: {}%\nTrue: {}%"
 
         self.unassessedColor = QColor(Qt.lightGray)
@@ -62,13 +62,31 @@ class PercentBar(QWidget):
         true = self.numbers[0]
         false = self.numbers[1]
         total = self.numbers[2]
+        haveNumbers = isinstance(true, int) and isinstance(false, int) and isinstance(total, int)
 
-        w = rec.width() * (true + false) / float(total)
+        if haveNumbers:
+            w = rec.width() * (true + false) / float(total)
+            b.setStyle(Qt.SolidPattern)
+        else:
+            true = "?"
+            total = "?"
+            w = 0.25 * rec.width()
+            b.setStyle(Qt.BDiagPattern)
+        painter.setBrush(b)
         rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
         painter.drawRect(rec)
         b.setColor(self.trueColor)
         painter.setBrush(b)
-        w = rec.width() * float(true) / (true + false)
+        if haveNumbers:
+            if true+false ==0:
+                w = 0
+            else:
+                w = rec.width() * float(true) / (true + false)
+            b.setStyle(Qt.SolidPattern)
+        else:
+            w = 0.25 * rec.width()
+            b.setStyle(Qt.BDiagPattern)
+
         rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
         painter.drawRect(rec)
 
