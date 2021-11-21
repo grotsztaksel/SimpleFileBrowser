@@ -108,42 +108,22 @@ class Model(QFileSystemModel):
         self.cache = {}
         self.mgr = None
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        """
-        Add one data column
-        :param parent: parent index
-        :return:
-        """
-        return super(Model, self).columnCount() + 1
-
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Any:
-        if section < Model.DATACOL:
-            return super(Model, self).headerData(section, orientation, role)
-        elif section == Model.DATACOL:
-            if role == Qt.DisplayRole:
-                return "% of binary files"
-        else:
-            return super(Model, self).headerData(section - 1, orientation, role)
-
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         col = index.column()
-        if col == 0 and role == Qt.ForegroundRole:
+        if role == Qt.ForegroundRole and not self.isDir(index):
             fp = self.filePath(index)
-            if os.path.isfile(fp) and not self.isText(fp):
+            if not self.isText(fp):
                 # Make only non-text files (do not mark directories
                 return QColor(Qt.blue).lighter()
             else:
                 return super().data(index, role)
-        elif col < Model.DATACOL:
-            return super().data(index, role)
         elif role == Model.TotalBinaryRole and col == Model.DATACOL and self.mgr is not None:
             fp = os.path.normpath(self.filePath(index))
             if fp in self.mgr.items:
                 return [self.mgr.items[fp].binCount(), self.mgr.items[fp].txtCount(), self.mgr.items[fp].totalFiles()]
             else:
                 pass
-        elif col > Model.DATACOL:
-            return super().data(index.siblingAtColumn(col - 1), role)
+        return super().data(index, role)
 
     def setDirManager(self, manager):
         self.mgr = manager
@@ -170,15 +150,13 @@ class PercentBarDelegate(QStyledItemDelegate):
             if numbers:
                 bar.numbers = numbers
             bar.paint(painter, option.rect)
-        elif self.fileLabelRequired(index):
-            self.paintFileLabel(painter, option, index)
         else:
             super().paint(painter, option, index)
 
     def percentBarRequired(self, index):
         """Helper function deciding whether the percent bar is required for given index"""
         return isinstance(index.model(), Model) and \
-               os.path.isdir(index.model().filePath(index.siblingAtColumn(0))) and \
+               index.model().isDir(index) and \
                index.column() == Model.DATACOL
 
     def fileLabelRequired(self, index):
