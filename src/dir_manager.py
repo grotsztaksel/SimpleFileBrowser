@@ -67,6 +67,8 @@ class Dir(DirTreeItem):
         super().__init__(basepath, manager)
         self.dirs = []
         self.files = []
+        self.nbinFiles = 0
+        self.ntxtFiles = 0
         try:
             subdirs = os.listdir(self.path)
         except (PermissionError, FileNotFoundError) as e:
@@ -79,12 +81,32 @@ class Dir(DirTreeItem):
                 self.files.append(File(path, self.manager))
             elif os.path.isdir(path):
                 self.dirs.append(Dir(path, self.manager))
+        self.analyzeFiles()
 
     def totalFiles(self):
         """
         Returns the total number of files in this and child directories
         """
         return len(self.files) + sum([d.totalFiles() for d in self.dirs])
+
+    # ToDo: move to threads
+    def analyzeFiles(self):
+        """
+        Count the number of binary and non binary files in dir
+        """
+        for f in self.files:
+            if f.isBinary():
+                self.nbinFiles += 1
+            else:
+                self.ntxtFiles += 1
+
+    def binCount(self):
+        """Return the number of binary files in this and subdirecoties"""
+        return self.nbinFiles + sum([d.binCount() for d in self.dirs])
+
+    def txtCount(self):
+        """Return the number of non-binary files in this and subdirecoties"""
+        return self.ntxtFiles + sum([d.txtCount() for d in self.dirs])
 
 
 class File(DirTreeItem):
