@@ -16,17 +16,24 @@ from PyQt5.QtCore import Qt, QRect, pyqtSlot, QSize, QMargins, QPoint
 from PyQt5.QtGui import QPaintEvent, QColor, QPen, QPainter
 from PyQt5.QtWidgets import QWidget
 
+try:
+    from humanize import naturalsize
+
+    HUMANSIZE_FOUND = True
+except ImportError:
+    HUMANSIZE_FOUND = False
+
 
 class PercentBar(QWidget):
     def __init__(self, parent=None, tooltipFormat=None):
         super(PercentBar, self).__init__(parent)
         self.setMinimumSize(QSize(32, 16))
-        self.numbers = [None, None, None]
+        self.numbers = 4 * [None]
         self.tf = "Analyzed: {}%\nTrue: {}%"
 
         self.unassessedColor = QColor(Qt.lightGray)
         self.assessedColor = QColor(Qt.white)
-        self.trueColor = QColor(Qt.darkGreen).lighter(120)
+        self.trueColor = QColor(Qt.blue).lighter(180)
         self.textColor = QColor(Qt.black)
 
         if tooltipFormat is not None:
@@ -60,8 +67,9 @@ class PercentBar(QWidget):
         b.setColor(self.assessedColor)
         painter.setBrush(b)
         true = self.numbers[0]
-        false = self.numbers[1]
-        total = self.numbers[2]
+        binSize = self.numbers[1]
+        false = self.numbers[2]
+        total = self.numbers[3]
         haveNumbers = isinstance(true, int) and isinstance(false, int) and isinstance(total, int)
 
         if haveNumbers:
@@ -78,7 +86,7 @@ class PercentBar(QWidget):
         b.setColor(self.trueColor)
         painter.setBrush(b)
         if haveNumbers:
-            if true+false ==0:
+            if true + false == 0:
                 w = 0
             else:
                 w = rec.width() * float(true) / (true + false)
@@ -89,9 +97,6 @@ class PercentBar(QWidget):
 
         rec = QRect(rec.topLeft(), QSize(int(w), rec.height()))
         painter.drawRect(rec)
-
-        leftTextR = QRect(rec0.topLeft(), QSize(int(0.25 * rec0.width()), rec0.height()))
-        rightTextR = QRect(QPoint(int(0.75 * rec0.width()), rec0.top()), rec0.bottomRight())
 
         pen = QPen()
 
@@ -107,5 +112,14 @@ class PercentBar(QWidget):
         painter.setPen(pen)
         painter.setBrush(b)
 
-        painter.drawText(leftTextR, Qt.AlignLeft | Qt.AlignVCenter, str(true))
-        painter.drawText(rightTextR, Qt.AlignRight | Qt.AlignVCenter, str(total))
+        if isinstance(binSize, int):
+            if HUMANSIZE_FOUND:
+                size = naturalsize(binSize)
+            else:
+                size = binSize
+        else:
+            size = "?"
+
+        leftText = f"{true} ({size})"
+        painter.drawText(rec0, Qt.AlignLeft | Qt.AlignVCenter, leftText)
+        painter.drawText(rec0, Qt.AlignRight | Qt.AlignVCenter, str(total))

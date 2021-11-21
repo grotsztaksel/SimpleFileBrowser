@@ -95,6 +95,7 @@ class Dir(DirTreeItem):
         Count the number of binary and non binary files in dir
         """
         for f in self.files:
+            f.size()
             if f.isBinary():
                 self.nbinFiles += 1
             else:
@@ -108,11 +109,18 @@ class Dir(DirTreeItem):
         """Return the number of non-binary files in this and subdirecoties"""
         return self.ntxtFiles + sum([d.txtCount() for d in self.dirs])
 
+    def binSize(self):
+        return sum([f.size() for f in self.files if f.isBinary()]) + sum([d.binSize() for d in self.dirs])
+
+    def txtSize(self):
+        return sum([f.size() for f in self.files if not f.isBinary()]) + sum([d.txtSize() for d in self.dirs])
+
 
 class File(DirTreeItem):
     def __init__(self, basepath, manager):
         super().__init__(basepath, manager)
         self.binary = None
+        self.bytes = None
 
     def isBinary(self):
         """
@@ -122,3 +130,8 @@ class File(DirTreeItem):
         if not isinstance(self.binary, bool):
             self.binary = not isText(self.path)
         return self.binary
+
+    def size(self):
+        if self.bytes is None:
+            self.bytes = os.stat(self.path).st_size
+        return self.bytes

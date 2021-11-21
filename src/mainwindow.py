@@ -120,7 +120,10 @@ class Model(QFileSystemModel):
         elif role == Model.TotalBinaryRole and col == Model.DATACOL and self.mgr is not None:
             fp = os.path.normpath(self.filePath(index))
             if fp in self.mgr.items:
-                return [self.mgr.items[fp].binCount(), self.mgr.items[fp].txtCount(), self.mgr.items[fp].totalFiles()]
+                return [self.mgr.items[fp].binCount(),
+                        self.mgr.items[fp].binSize(),
+                        self.mgr.items[fp].txtCount(),
+                        self.mgr.items[fp].totalFiles()]
             else:
                 pass
         return super().data(index, role)
@@ -159,46 +162,3 @@ class PercentBarDelegate(QStyledItemDelegate):
                index.model().isDir(index) and \
                index.column() == Model.DATACOL
 
-    def fileLabelRequired(self, index):
-        """
-        Return true if index has a file what is binary
-        :param index:
-        :return:
-        """
-        model = index.model()
-        if not isinstance(model, Model):
-            return False
-
-        return index.column() == Model.DATACOL and os.path.isfile(model.filePath(index))
-
-    def paintFileLabel(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
-        model = index.model()
-        if not isinstance(model, Model):
-            return super().paint(painter, option, index)
-
-        fp = os.path.normpath(model.filePath(index))
-        if model.mgr is None:
-            return super().paint(painter, option, index)
-        if fp not in model.mgr.items or not os.path.isfile(fp):
-            return super().paint(painter, option, index)
-
-        rec = option.rect
-        font = painter.font()
-        font.setPixelSize(rec.height() * 0.5)
-
-        if model.mgr.items[fp].isBinary():
-            txt = "b"
-            font.setFamily("Tahoma")
-            color = QColor(Qt.blue).lighter()
-        else:
-            txt = ""
-            font.setFamily("Courier")
-            color = QColor(Qt.gray)
-
-        pen = painter.pen()
-        pen.setColor(color)
-        pen.setStyle(Qt.SolidLine)
-        painter.setFont(font)
-        painter.setPen(pen)
-
-        painter.drawText(rec, Qt.AlignCenter, txt)
