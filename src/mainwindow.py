@@ -16,7 +16,7 @@ from random import random
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QModelIndex, pyqtSlot
-from PyQt5.QtGui import QColor, QPainter, QPalette
+from PyQt5.QtGui import QColor, QPainter, QPalette, QKeySequence, QGuiApplication
 from PyQt5.QtWidgets import QFileSystemModel, QStyledItemDelegate, QStyleOptionViewItem, QFileDialog
 
 from .dir_manager import DirManager
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.model.setDirManager(self.mgr)
         nf = self.mgr.dir.totalFiles()
         logging.info(f"Total number of files: {nf}.")
-        progress_thresholds = list(range(0, nf, int(nf / 10)))
+        progress_thresholds = list(range(0, nf, int(nf / 100)))
         progress_thresholds.pop(0)
         progress_thresholds.extend([nf, len(self.mgr.items)])  # The latter just in case progress reporting goes too far
         i = 0
@@ -89,10 +89,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if not os.path.isfile(path):
                 continue
             i += 1
+
             item.isBinary()
             if i >= next_threshold:
                 logging.info("{0:0.0f}% done ({1:d} of {2:d})".format(100.0 * i / nf, i, nf))
                 next_threshold = progress_thresholds.pop(0)
+            else:
+                logging.debug("{0:0.0f}% done ({1:d} of {2:d})".format(100.0 * i / nf, i, nf))
+
+    def keyPressEvent(self, event):
+        if event.matches(QKeySequence.Copy):
+            if self.treeView.currentIndex().isValid():
+                path = os.path.normpath(self.treeView.model().filePath(self.treeView.currentIndex()))
+                QGuiApplication.clipboard().setText(path)
+                logging.info(f"Copied {path} to clipboard")
 
 
 class Model(QFileSystemModel):
@@ -161,4 +171,3 @@ class PercentBarDelegate(QStyledItemDelegate):
         return isinstance(index.model(), Model) and \
                index.model().isDir(index) and \
                index.column() == Model.DATACOL
-
